@@ -1,6 +1,6 @@
 
 import os
-from urllib.parse import quote_plus
+import ssl
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,26 +8,36 @@ from pydantic import BaseModel
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import SQLAlchemyError
+from urllib.parse import quote_plus
 
-password = os.getenv("DB_PASSWORD")
-if not password:
-    raise RuntimeError("Please set the DB_PASSWORD environment variable.")
+DB_HOST = os.environ["DB_HOST"]
+DB_PORT = os.environ.get("DB_PORT", "12601")
+DB_NAME = os.environ.get("DB_NAME", "defaultdb")
+DB_USER = os.environ.get("DB_USER", "avnadmin")
+DB_PASSWORD = os.environ["DB_PASSWORD"]
 
 DATABASE_URL = (
-    f"mysql+pymysql://root:{quote_plus(password)}"
-    "@127.0.0.1:3306/hackathon_db"
+    f"mysql+pymysql://{quote_plus(DB_USER)}:"
+    f"{quote_plus(DB_PASSWORD)}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 )
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-SessionLocal = sessionmaker(bind=engine)
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,
+    connect_args={"ssl": {"check_hostname": True}},
+)
 
+SessionLocal = sessionmaker(bind=engine)
 
 app = FastAPI(title="Hackathon Starter API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
-    allow_credentials=True,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -47,7 +57,7 @@ class TaskCreate(BaseModel):
 
 @app.get("/")
 def home():
-    return {"message": "Hello from FastAPI!"}
+    return {"message": "Hackathon Starter API is running"}
 
 
 @app.get("/api/health")
@@ -96,12 +106,9 @@ def create_task(task: TaskCreate, db: Session = Depends(get_db)):
             text("INSERT INTO tasks (title) VALUES (:title)"),
             {"title": title},
         )
+        task_id = result.lastrowid
         db.commit()
-        return {
-            "id": result.lastrowid,
-            "title": title,
-            "completed": False,
-        }
+        return {"id": task_id, "title": title, "completed": False}
     except SQLAlchemyError:
         db.rollback()
         raise HTTPException(status_code=503, detail="Could not create task")
