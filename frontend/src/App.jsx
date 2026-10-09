@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 
-const API = "http://127.0.0.1:8000/api/tasks";
+const API = "https://hackathon-starter-brs7.onrender.com/api/tasks";
 
 function App() {
   const [tasks, setTasks] = useState([]);
