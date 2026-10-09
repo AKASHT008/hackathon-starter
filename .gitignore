@@ -1,0 +1,29 @@
+
+# Node.js / React
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+backend/.venv/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Logs and local files
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
